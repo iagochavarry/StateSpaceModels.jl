@@ -77,7 +77,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Manual",
     "title": "StateSpaceModels.StateSpaceModel",
     "category": "type",
-    "text": "StateSpaceModel{Typ}\n\nFollowing the notation of on the book \"Time Series Analysis by State Space Methods\" (2012) by J. Durbin and S. J. Koopman.\n\ny A n times p matrix containing observations\nZ A p times m times n matrix\nT A m times m matrix\nR A m times r matrix\nd A n times p matrix\nc A n times m matrix\nH A p times p matrix\nQ A r times r matrix\n\nThere are multiple constructors for the StateSpaceModel:\n\nStateSpaceModel(y::VecOrMat{Typ}, Z::Matrix{Typ}, T::Matrix{Typ}, R::Matrix{Typ}) where Typ <: Real StateSpaceModel(y::VecOrMat{Typ}, Z::Array{Typ, 3}, T::Matrix{Typ}, R::Matrix{Typ}) where Typ <: Real StateSpaceModel(y::VecOrMat{Typ}, Z::Matrix{Typ}, T::Matrix{Typ}, R::Matrix{Typ}, d::Matrix{Typ}, c::Matrix{Typ}, H::Matrix{Typ}, Q::Matrix{Typ}) where Typ <: Real StateSpaceModel(y::VecOrMat{Typ}, Z::Array{Typ, 3}, T::Matrix{Typ}, R::Matrix{Typ}, d::Matrix{Typ}, c::Matrix{Typ}, H::Matrix{Typ}, Q::Matrix{Typ}) where Typ <: Real\n\n\n\n\n\n"
+    "text": "StateSpaceModel{Typ <: Real}\n\nFollowing the notation of on the book \"Time Series Analysis by State Space Methods\" (2012) by J. Durbin and S. J. Koopman.\n\ny A n times p matrix containing observations\nZ A p times m times n matrix\nT A m times m matrix\nR A m times r matrix\nd A n times p matrix\nc A n times m matrix\nH A p times p matrix\nQ A r times r matrix\n\n\n\n\n\n"
 },
 
 {
@@ -85,7 +85,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Manual",
     "title": "StateSpaceModels.SmoothedState",
     "category": "type",
-    "text": "SmoothedState\n\nFollowing the notation of on the book \"Time Series Analysis by State Space Methods\" (2012) by J. Durbin and S. J. Koopman.\n\nalpha Expected value of the smoothed state E(alpha_ty_1 dots  y_n)\nV Error covariance matrix of smoothed state Var(alpha_ty_1 dots  y_n)\n\n\n\n\n\n"
+    "text": "SmoothedState{T <: Real}\n\nFollowing the notation of on the book \"Time Series Analysis by State Space Methods\" (2012) by J. Durbin and S. J. Koopman.\n\nalpha Expected value of the smoothed state E(alpha_ty_1 dots  y_n)\nV Error covariance matrix of smoothed state Var(alpha_ty_1 dots  y_n)\n\n\n\n\n\n"
 },
 
 {
@@ -93,7 +93,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Manual",
     "title": "StateSpaceModels.FilterOutput",
     "category": "type",
-    "text": "FilterOutput\n\nFollowing the notation of on the book \"Time Series Analysis by State Space Methods\" (2012) by J. Durbin and S. J. Koopman.\n\na Predictive state E(alpha_ty_t-1 dots  y_1)\natt Filtered state E(alpha_ty_t dots  y_1)\nv Prediction error v_t = y_t  Z_t a_t\nP Covariance matrix of predictive state P = Var(alpha_ty_t1 dots  y_1)\nPtt Covariance matrix of filtered state P = Var(alpha_ty_t dots  y_1)\nF Variance of prediction error Var(v_t)\nsteadystate Boolean to indicate if steady state was attained\ntsteady Instant when steady state was attained; in case it was not, tsteady = n+1\n\n\n\n\n\n"
+    "text": "FilterOutput{T <: Real}\n\nFollowing the notation of on the book \"Time Series Analysis by State Space Methods\" (2012) by J. Durbin and S. J. Koopman.\n\na Predictive state E(alpha_ty_t-1 dots  y_1)\natt Filtered state E(alpha_ty_t dots  y_1)\nv Prediction error v_t = y_t  Z_t a_t\nP Covariance matrix of predictive state P = Var(alpha_ty_t1 dots  y_1)\nPtt Covariance matrix of filtered state P = Var(alpha_ty_t dots  y_1)\nF Variance of prediction error Var(v_t)\nsteadystate Boolean to indicate if steady state was attained\ntsteady Instant when steady state was attained; in case it was not, tsteady = n+1\n\n\n\n\n\n"
 },
 
 {
@@ -101,7 +101,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Manual",
     "title": "StateSpaceModels.StateSpace",
     "category": "type",
-    "text": "StateSpace\n\nA state-space structure containing the model, filter output, smoother output, covariance matrices, filter type and optimization method.\n\n\n\n\n\n"
+    "text": "StateSpace{T <: Real}\n\nA state-space structure containing the model, filter output, smoother output, covariance matrices, filter type and optimization method.\n\n\n\n\n\n"
 },
 
 {
