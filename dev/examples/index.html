@@ -27,25 +27,52 @@ p4 = plot!(p1, newdates, sim[:, 1, :], label = &quot;&quot;, color = &quot;Grey&
 \end{align}\]</div><p>where <span>$\Delta_t$</span> is the time step and <span>$\rho$</span> is a known damping effect on speed. </p><p>We can cast this dynamical system as a state-space model in the following manner:</p><div>\[\begin{align} 
     y_t &amp;= \begin{bmatrix} 1 &amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 1 &amp; 0 \end{bmatrix} \alpha_{t+1} + \varepsilon_t, \\
     \alpha_{t+1} &amp;= \begin{bmatrix} 1 &amp; (1 - \tfrac{\rho \Delta_t}{2}) \Delta_t &amp; 0 &amp; 0 \\ 0 &amp; (1 - \rho) &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 1 &amp; (1 - \tfrac{\rho \Delta_t}{2}) \\ 0 &amp; 0 &amp; 0 &amp; (1 - \rho) \end{bmatrix} \alpha_{t} + \begin{bmatrix} \tfrac{\Delta^2_t}{2} &amp; 0 \\ \Delta_t &amp; 0 \\ 0 &amp; \tfrac{\Delta^2_t}{2} \\ 0 &amp; \Delta_t \end{bmatrix} \eta_{t},
-\end{align}\]</div><p>where <span>$\alpha_t = (x_t^{(1)}, \dot{x}^{(1)}_{t}, x_t^{(2)}, \dot{x}^{(2)}_{t})^{\top}$</span> and <span>$\eta_t = (\eta^{(1)}_t, \eta^{(2)}_t)^{\top}$</span>.</p><p>We can formulate the vehicle tracking problem in StateSpaceModels.jl as:</p><pre><code class="language-julia"># State transition matrix
-T = kron(Matrix{Float64}(I, p, p), [1 (1 - ρ * Δ / 2) * Δ; 0 (1 - ρ * Δ)])
+\end{align}\]</div><p>where <span>$\alpha_t = (x_t^{(1)}, \dot{x}^{(1)}_{t}, x_t^{(2)}, \dot{x}^{(2)}_{t})^{\top}$</span> and <span>$\eta_t = (\eta^{(1)}_t, \eta^{(2)}_t)^{\top}$</span>.</p><p>We can formulate the vehicle tracking problem in StateSpaceModels.jl as:</p><pre><code class="language-julia">using StateSpaceModels, Distributions, LinearAlgebra, Plots, Random
+
+# Fix seed
+Random.seed!(1)
+
+# Number of observations
+n = 400
+# State dimension (2d position + 2d speed)
+m = 4
+# Measurements dimension (2d noisy position)
+p = 2
+# Control dimension (2d acceleration)
+q = 2
+
+# Damping ratio
+ρ = 0.05
+# Time delta
+Δ = 1.0
+
+# State transition matrix
+T = kron(Matrix{Float64}(I, p, p), [1.0 (1.0 - ρ * Δ / 2.0) * Δ; 0.0 (1.0 - ρ * Δ)])
 # Input matrix
-R = kron(Matrix{Float64}(I, p, p), [.5 * Δ^2; Δ])
+R = kron(Matrix{Float64}(I, p, p), [0.5 * Δ^2; Δ])
 # Output (measurement) matrix
-Z = kron(Matrix{Float64}(I, p, p), [1 0])
-# User defined model
-model = StateSpaceModel(y, Z, T, R)
-# Estimate vehicle speed and position
-ss = statespace(model)</code></pre><p>In this example, we define the noise variances <span>$H$</span> and <span>$Q$</span>, generate the noises and simulate a random vehicle trajectory using the state-space equations:</p><pre><code class="language-julia"># Generate random actuators
-Q = .5 * Matrix{Float64}(I, q, q)
+Z = kron(Matrix{Float64}(I, p, p), [1.0 0.0])</code></pre><p>In this example, we define the noise variances <span>$H$</span> and <span>$Q$</span>, generate the noises and simulate a random vehicle trajectory using the state-space equations:</p><pre><code class="language-julia"># Generate random actuators
+Q = 0.5 * Matrix{Float64}(I, q, q)
 η = MvNormal(Q)
+
 # Generate random measurement noise
-H = 2. * Matrix{Float64}(I, p, p)
+H = 2.0 * Matrix{Float64}(I, p, p)
 ε = MvNormal(H)
+
 # Simulate vehicle trajectory
 α = zeros(n + 1, m)
 y = zeros(n, p)
 for t in 1:n
     y[t, :] = Z * α[t, :] + rand(ε)
     α[t + 1, :] = T * α[t, :] + R * rand(η)  
-end</code></pre><p>An illustration of the results can be seen in the following figure. It can be seen that the measurements are reasonably noisy when compared to the true position. Furthermore, the estimated positions, represented by the smoothed state, effectively estimate the true positions with small inaccuracies.</p><p><img src="../assets/vehicle_tracking.png" alt="Vehicle tracking"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../manual/">« Manual</a><a class="docs-footer-nextpage" href="../reference/">Reference »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Friday 14 February 2020 18:35">Friday 14 February 2020</span>. Using Julia version 1.0.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end
+α = α[1:n, :]
+
+# User defined model
+model = StateSpaceModel(y, Z, T, R)
+# Estimate vehicle speed and position
+ss = statespace(model)
+
+# StateSpaceModels.jl correctly estimated the parameters H and Q
+ss.model.H
+ss.model.Q</code></pre><p>An illustration of the results can be seen in the following figure. It can be seen that the measurements are reasonably noisy when compared to the true position. Furthermore, the estimated positions, represented by the smoothed state, effectively estimate the true positions with small inaccuracies.</p><p><img src="../assets/vehicle_tracking.gif" alt="Vehicle tracking"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../manual/">« Manual</a><a class="docs-footer-nextpage" href="../reference/">Reference »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Tuesday 18 February 2020 13:39">Tuesday 18 February 2020</span>. Using Julia version 1.0.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
