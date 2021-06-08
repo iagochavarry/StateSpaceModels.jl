@@ -580,6 +580,7 @@ function initial_hyperparameters!(model::SARIMA)
     y_diff = filter(!isnan, y_diff)
     # Non-seasonal ARMA
     (initial_ar, initial_ma) = conditional_sum_of_squares(y_diff, model.order.p, model.order.q)
+    
     if !assert_stationarity(initial_ar)
         @warn("Conditional sum of squares estimated initial_ar out of the unit circle, using zero as starting params")
         initial_ar .= zero(Fl)
@@ -814,6 +815,17 @@ function handle_unit_root_type(test::Symbol)
     return test == :KPSS ? KPSS : ADF
 end
 
+function verify_intercept(d, allowdrift, allowmean)
+    if d == 0 && allowmean
+        return true
+    end
+    if d == 1 && allowdrift
+        return true
+    end
+    
+    return false
+end
+
 mutable struct AutoARIMAParameters
     frequency::Int
     d::Int
@@ -825,6 +837,7 @@ mutable struct AutoARIMAParameters
     max_d::Int
     max_D::Int
     stationary::Bool
+    seasonal::Bool
     ic::Symbol               
     nmodels::Int
     trace::Bool
@@ -835,7 +848,7 @@ end
     Explicar certin
 """
 function autoarima(y::Vector{Fl};
-                   frequency = NaN,
+                   frequency = 0,
                    d = NaN,
                    D = NaN,
                    max_p::Int = 5,
@@ -862,7 +875,7 @@ function autoarima(y::Vector{Fl};
                    test_args::Dict = Dict(),
                    # seasonal_test,
                    # seasonal_test_args,
-                   allowdrift = true,
+                   allowdrift = true, # série diferenciada
                    allowmean = true
                    # lambda = NULL,
                    # biasadj = FALSE,
@@ -881,18 +894,93 @@ function autoarima(y::Vector{Fl};
     D = seasonal ? handle_seasonal_integration_order(y, max_D, D) : 0
     # Definir d
     d = handle_integration_order(y, max_d, D, frequency, test_args, test)
-    # if stepwise == true
-        # Definir o primeiro current model
+    allow_intercept = verify_intercept(d, allowdrift, allowmean)
+    @show allow_intercept
+    parameters = AutoARIMAParameters(
+        frequency, d, D, max_p, max_q, max_P,
+        max_Q, max_d, max_D, stationary, seasonal, ic,
+        nmodels, trace, allow_intercept
+        )
+    @show "Choosing StepWise"
+    if stepwise == true
+        #Definir o primeiro current model
 
-        # Criação do conjunto de modelos baseado no current model
+        #Criação do conjunto de modelos baseado no current model
         
-        # Estimar os modelos do conjunto
+        #Estimar os modelos do conjunto
 
-        # Atualizar o current model
+        #Atualizar o current model
         
-    # elseif stepwise == false
-        # Escolher ordem na força bruta dentre todos os
-        # parâmetros permitidos
-    # end
-    return D, d
+    elseif stepwise == false
+        return stepwise_false(y, parameters)
+
+    end
+    return 
+end
+
+
+
+function stepwise_false_allow_intercept(parameters::AutoARIMAParameters)
+    
+    if parameters.allow_intercept == true
+        return [true, false]
+    else
+        return [false]
+    end
+end
+
+function get_ic_value(model::SARIMA, ic::Symbol)
+
+    if ic == :AIC
+        return model.results.aic
+    elseif ic == :AICc
+        return model.results.aicc
+    else
+        return model.results.bic
+    end
+end
+
+function get_order_range(parameters::AutoARIMAParameters)
+
+    max_p = parameters.max_p
+    max_q = parameters.max_q
+    max_P = parameters.seasonal ? parameters.max_P : 0
+    max_Q = parameters.seasonal ? parameters.max_Q : 0
+    
+    return 0:max_p, 0:max_q, 0:max_P, 0:max_Q
+end
+
+function stepwise_false(y::Vector{Float64}, parameters::AutoARIMAParameters)
+    
+    range_p, range_q, range_P, range_Q  = get_order_range(parameters)
+
+    current = nothing
+    ic = Inf
+    @info("Mean set: $(stepwise_false_allow_intercept(parameters))")
+    for mean in stepwise_false_allow_intercept(parameters) #stepwise_false_allow_intercept(parameters)
+        for p in range_p, q in range_q, P in range_P, Q in range_Q
+            # (p == 0) && (q == 0) && (Q == 0) && (P == 0) ? continue : nothing
+            @info("($p, $(parameters.d), $q)")
+            order = (p, parameters.d, q)
+            seasonal_order = (P, parameters.D, Q, parameters.frequency)
+            model = SARIMA(y; order = order, seasonal_order = seasonal_order,
+                        include_mean = mean)
+            fit_model = try 
+                fit!(model)            
+            catch
+                @info("Fail to converge at order: ($p, $(parameters.d), $q)")
+                "Fail to converge"
+            end
+            if fit_model != "Fail to converge"
+                ic_value = get_ic_value(fit_model, parameters.ic)
+                @info("IC: ", ic_value)
+                if ic_value < ic
+                    current = fit_model
+                    ic = ic_value
+                end
+            end
+        end
+    end
+
+    return current
 end
